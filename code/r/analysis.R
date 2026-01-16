@@ -56,7 +56,7 @@ CONFIG = list(
 
 HYPERPARAMS = list(
   seed = 42,
-  k_folds = 3,
+  k_folds = 50,
   val_frac = 0.20,
   hidden_sizes = c(),
   activation = "relu",
@@ -68,7 +68,7 @@ HYPERPARAMS = list(
   batch_size = 2^16,
   use_early_stopping = TRUE,
   keep_best_model = TRUE,
-  early_patience = 100,
+  early_patience = 5,
   early_min_delta = 0.0,
   grad_clip_norm = 1.0,
   lr_step = 1000,
