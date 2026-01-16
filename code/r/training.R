@@ -17,8 +17,8 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
-source("utilities.R")
-source("neural_network.R")
+source("code/r/utilities.R")
+source("code/r/neural_network.R")
 
 ################################################################################
 # Early Stopping

@@ -619,8 +619,7 @@ foreach g in `cohort_list' {
 		rename `v' Y_`v'
 	}
 	
-// 	gstats winsor Y_*, by(D_treat) cut(0 90) replace
-// 	gstats winsor X* Z*, by(D_treat) cut(10 90) replace
+	gstats winsor Y_*, by(D_treat) cut(0 90) replace
 	export delimited "${final}/csv/cohort_`g'.csv", replace
 	
 	restore

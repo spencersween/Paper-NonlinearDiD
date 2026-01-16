@@ -19,7 +19,7 @@ suppressPackageStartupMessages({
   library(fixest)
 })
 
-source("influence_functions.R")
+source("code/r/influence_functions.R")
 
 ################################################################################
 # Multi-Cohort Aggregation

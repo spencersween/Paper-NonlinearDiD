@@ -22,11 +22,11 @@ suppressPackageStartupMessages({
 })
 
 # Source all component modules
-source("utilities.R")
-source("neural_network.R")
-source("training.R")
-source("influence_functions.R")
-source("event_study.R")
+source("code/r/utilities.R")
+source("code/r/neural_network.R")
+source("code/r/training.R")
+source("code/r/influence_functions.R")
+source("code/r/event_study.R")
 
 ################################################################################
 # Configuration
@@ -34,8 +34,8 @@ source("event_study.R")
 
 CONFIG = list(
   # Data
-  data_dir = "~/Dropbox/Paper -- Nonlinear DiD/data/final/csv/",
-  cohorts = c(1991, 1994, 1996, 1997, 1998, 2000, 2001, 2002, 2003, 2004, 2006, 2008, 2010, 2012),
+  data_dir = "data/final/csv/",
+  cohorts = c(1991, 1994, 1996, 1997, 1998, 2000, 2001, 2002, 2003, 2004, 2006, 2008, 2010),
 
   # Model settings
   loss_type = "poisson",
@@ -57,11 +57,11 @@ CONFIG = list(
 HYPERPARAMS = list(
   seed = 42,
   k_folds = 3,
-  val_frac = 0.50,
+  val_frac = 0.20,
   hidden_sizes = c(),
   activation = "relu",
   dropout = 0.00,
-  weight_decay_lambda = 1e-5,
+  weight_decay_lambda = 0,
   optimizer = "adamw",
   optimizer_args = list(lr = 0.10),
   max_epochs = 2000L,
@@ -96,7 +96,7 @@ load_cohort_data = function(cohort, data_dir = CONFIG$data_dir) {
       county_fips,
       starts_with("Y"),
       starts_with("D"),
-      X_pop_1990, X_sfr, X_eqi
+      X_pop_1990
     )
 }
 
@@ -255,10 +255,5 @@ run_analysis = function() {
 # Execute Analysis
 ################################################################################
 
-# Run the complete analysis when this script is sourced
-# Uncomment the line below to run automatically:
-# results = run_analysis()
+results = run_analysis()
 
-# Or run manually in your R session:
-# source("analysis.R")
-# results = run_analysis()

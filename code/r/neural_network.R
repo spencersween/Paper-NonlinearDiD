@@ -13,7 +13,7 @@ suppressPackageStartupMessages({
   library(torch)
 })
 
-source("utilities.R")
+source("code/r/utilities.R")
 
 ################################################################################
 # Layer Initialization
