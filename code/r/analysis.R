@@ -34,7 +34,7 @@ source("code/r/event_study.R")
 
 CONFIG = list(
   # Data
-  data_dir = "data/final/csv/",
+  data_dir = "/Users/spencersween/Dropbox/Paper -- Nonlinear DiD/data/final/csv",
   cohorts = c(1991, 1994, 1996, 1997, 1998, 2000, 2001, 2002, 2003, 2004, 2006, 2008, 2010),
 
   # Model settings
@@ -115,8 +115,6 @@ load_cohort_data = function(cohort, data_dir = CONFIG$data_dir) {
 #
 # @return List with complete analysis results
 run_analysis = function() {
-
-  setwd(CONFIG$data_dir)
 
   cat("\n", strrep("=", 70), "\n")
   cat(" Nonlinear DiD Event Study Analysis\n")
