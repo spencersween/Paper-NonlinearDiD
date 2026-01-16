@@ -104,22 +104,27 @@ CONFIG = list(
 
 HYPERPARAMS = list(
   seed = 42,
-  k_folds = 3,
-  val_frac = 0.20,
+  k_folds = 5,
+  val_frac = 0.01,
   hidden_sizes = c(),
   activation = "relu",
   dropout = 0.00,
-  weight_decay_lambda = 0,
+
+  # Regularization options
+  l2_lambda = 100,      # L2 (ridge) regularization strength
+  l1_lambda = 100,          # L1 (lasso) regularization strength
+  use_explicit_l2 = TRUE, # TRUE: add L2 directly to loss; FALSE: use optimizer weight_decay
+
   optimizer = "adamw",
   optimizer_args = list(lr = 0.10),
-  max_epochs = 2000L,
+  max_epochs = 200,
   batch_size = 2^16,
-  use_early_stopping = TRUE,
-  keep_best_model = TRUE,
-  early_patience = 100,
+  use_early_stopping = FALSE,
+  keep_best_model = FALSE,
+  early_patience = 15,
   early_min_delta = 0.0,
   grad_clip_norm = 1.0,
-  lr_step = 1000,
+  lr_step = 50,
   lr_gamma = 0.1,
   device = "cpu",
   verbose = TRUE,
@@ -149,7 +154,8 @@ load_cohort_data = function(cohort, data_dir = CONFIG$data_dir) {
       county_fips,
       starts_with("Y"),
       starts_with("D"),
-      X_pop_1990
+      starts_with("X")
+      # X_base_sfr, X_base_eqi, X_pop_1990
     )
 }
 
@@ -190,6 +196,7 @@ run_analysis = function() {
 
     # Load data
     df = load_cohort_data(cohort)
+    
     cat(sprintf("n = %d ... ", nrow(df)))
 
     # Fit structural model
@@ -202,6 +209,19 @@ run_analysis = function() {
       lower_bound = CONFIG$bounds["lower"],
       upper_bound = CONFIG$bounds["upper"]
     )
+    
+    # Y = as.matrix(df[,grep("^Y", colnames(df))])
+    # X = as.matrix(df[,grep("^X_", colnames(df))])
+    # D = as.numeric(df[,grep("^D", colnames(df))])
+    # cf0 = grf::multi_regression_forest(X = X[D==0, , drop = FALSE], Y = Y[D==0, , drop = FALSE], num.trees = 16000)
+    # yhat0 = predict(cf0, X)$predictions
+    # cf1 = grf::multi_regression_forest(X = X[D==1, , drop = FALSE], Y = Y[D==1, , drop = FALSE], num.trees = 16000)
+    # yhat1 = predict(cf1, X)$predictions
+    # cfD = grf::regression_forest(X = X, Y = D, num.trees = 16000)
+    # dhat = cfD$predictions
+    # results$outputs$a = yhat0
+    # results$outputs$b = yhat1
+    # results$outputs$p_scores = as.numeric(dhat)
 
     # Compute influence functions
     if_df = compute_cohort_ifs(df, results, clamp_ratio = CONFIG$clamp_ratio)
@@ -314,9 +334,4 @@ run_analysis = function() {
 # Execute Analysis
 ################################################################################
 
-# Uncomment to run automatically when sourced:
-# results = run_analysis()
-
-# Or run manually in your R session:
-# source("code/r/analysis_v2.R")
-# results = run_analysis()
+results = run_analysis()

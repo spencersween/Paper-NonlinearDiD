@@ -61,7 +61,12 @@ HYPERPARAMS = list(
   hidden_sizes = c(),
   activation = "relu",
   dropout = 0.00,
-  weight_decay_lambda = 0,
+
+  # Regularization options
+  l2_lambda = 0,          # L2 (ridge) regularization strength
+  l1_lambda = 0,          # L1 (lasso) regularization strength
+  use_explicit_l2 = TRUE, # TRUE: add L2 directly to loss; FALSE: use optimizer weight_decay
+
   optimizer = "adamw",
   optimizer_args = list(lr = 0.10),
   max_epochs = 2000L,

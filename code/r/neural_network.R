@@ -184,19 +184,32 @@ mse_loss_multi = function(yhat, y) {
 #
 # @param yhat Predicted rate (lambda)
 # @param y Observed counts
+# poisson_loss_multi = function(yhat, y) {
+#   yhat_safe = torch_clamp(yhat, min = DEFAULTS$poisson_clamp)
+#   y_safe = torch_clamp(y, min = 0)
+# 
+#   loss = yhat_safe - y_safe * torch_log(yhat_safe)
+# 
+#   # Handle numerical issues
+#   nan_mask = torch_isnan(loss) | torch_isinf(loss)
+#   if (nan_mask$any()$item()) {
+#     loss = torch_where(nan_mask, torch_full_like(loss, 10.0), loss)
+#   }
+# 
+#   torch_mean(loss)
+# }
+
 poisson_loss_multi = function(yhat, y) {
-  yhat_safe = torch_clamp(yhat, min = DEFAULTS$poisson_clamp)
   y_safe = torch_clamp(y, min = 0)
-
-  loss = yhat_safe - y_safe * torch_log(yhat_safe)
-
-  # Handle numerical issues
-  nan_mask = torch_isnan(loss) | torch_isinf(loss)
-  if (nan_mask$any()$item()) {
-    loss = torch_where(nan_mask, torch_full_like(loss, 10.0), loss)
-  }
-
-  torch_mean(loss)
+  
+  nnf_poisson_nll_loss(
+    input = yhat,
+    target = y_safe,
+    log_input = FALSE,   # input is lambda
+    full = FALSE,        # exclude log(y!) constant, matches your current loss
+    eps = DEFAULTS$poisson_clamp,
+    reduction = "mean"
+  )
 }
 
 # Binary cross-entropy loss for propensity
@@ -207,7 +220,7 @@ bce_loss_logits = function(p_logit, d) {
   nnf_binary_cross_entropy_with_logits(p_logit, d, reduction = "mean")
 }
 
-# L2 regularization penalty
+# L2 regularization penalty (Ridge)
 # @param model Neural network model
 # @param lambda Regularization strength
 l2_penalty = function(model, lambda = 0.0) {
@@ -224,22 +237,42 @@ l2_penalty = function(model, lambda = 0.0) {
   lambda * accum
 }
 
+# L1 regularization penalty (Lasso)
+# @param model Neural network model
+# @param lambda Regularization strength
+l1_penalty = function(model, lambda = 0.0) {
+  if (lambda <= 0) return(torch_tensor(0.0))
+
+  params = model$parameters
+  if (length(params) == 0) return(torch_tensor(0.0))
+
+  accum = torch_tensor(0.0, device = params[[1]]$device)
+  for (p in params) {
+    accum = accum + torch_sum(torch_abs(p))
+  }
+
+  lambda * accum
+}
+
 # Create joint loss function
 #
-# Combines outcome loss + propensity loss + optional L2 penalty.
+# Combines outcome loss + propensity loss + optional L1/L2 penalties.
 #
 # @param loss_type "mse" or "poisson"
-# @param weight_decay_lambda L2 penalty strength
-# @param add_explicit_penalty Whether to add explicit L2 (vs optimizer weight decay)
+# @param l2_lambda L2 (ridge) penalty strength
+# @param l1_lambda L1 (lasso) penalty strength
+# @param use_explicit_l2 Whether to add explicit L2 penalty (vs optimizer weight decay)
 # @param propensity_weight Weight on propensity loss
 # @return Loss function
 make_joint_loss_fn = function(loss_type = c("mse", "poisson"),
-                               weight_decay_lambda = 0.0,
-                               add_explicit_penalty = TRUE,
+                               l2_lambda = 0.0,
+                               l1_lambda = 0.0,
+                               use_explicit_l2 = TRUE,
                                propensity_weight = 1.0) {
   loss_type = match.arg(loss_type)
-  force(weight_decay_lambda)
-  force(add_explicit_penalty)
+  force(l2_lambda)
+  force(l1_lambda)
+  force(use_explicit_l2)
   force(propensity_weight)
 
   outcome_loss_fn = switch(loss_type,
@@ -253,11 +286,17 @@ make_joint_loss_fn = function(loss_type = c("mse", "poisson"),
 
     base_loss = outcome_loss + propensity_weight * bce
 
-    if (!isTRUE(add_explicit_penalty) || weight_decay_lambda <= 0) {
-      return(base_loss)
+    # Add L2 penalty if requested
+    if (isTRUE(use_explicit_l2) && l2_lambda > 0) {
+      base_loss = base_loss + l2_penalty(model, lambda = l2_lambda)
     }
 
-    base_loss + l2_penalty(model, lambda = weight_decay_lambda)
+    # Add L1 penalty if requested
+    if (l1_lambda > 0) {
+      base_loss = base_loss + l1_penalty(model, lambda = l1_lambda)
+    }
+
+    base_loss
   }
 }
 

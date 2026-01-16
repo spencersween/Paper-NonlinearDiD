@@ -52,6 +52,9 @@ All analysis parameters are controlled through two configuration lists in `analy
 - `k_folds`: Number of cross-fitting folds (typically 3-5)
 - `val_frac`: Validation split within training folds
 - `hidden_sizes`: Vector of hidden layer dimensions (empty = linear model)
+- `l2_lambda`: L2 (ridge) regularization strength
+- `l1_lambda`: L1 (lasso) regularization strength
+- `use_explicit_l2`: TRUE to add L2 penalty to loss; FALSE to use optimizer weight_decay
 - `optimizer`: "adamw" or "lbfgs"
 - `max_epochs`, `early_patience`: Training duration controls
 - `batch_size`: Mini-batch size (NULL for full batch)
@@ -119,6 +122,38 @@ In `analysis.R`, modify `HYPERPARAMS$hidden_sizes`:
 hidden_sizes = c(64, 64)     # Two hidden layers with 64 units each
 hidden_sizes = c()           # Linear model (no hidden layers)
 ```
+
+### Regularization Options
+
+The code supports three approaches to regularization:
+
+1. **Explicit L2 (Ridge) penalty** - Added directly to the loss function:
+```r
+l2_lambda = 1000          # Regularization strength
+use_explicit_l2 = TRUE    # Add L2 to loss
+```
+
+2. **Optimizer weight decay** - L2 regularization via AdamW optimizer:
+```r
+l2_lambda = 0.01          # Weight decay parameter
+use_explicit_l2 = FALSE   # Use optimizer weight_decay instead
+optimizer = "adamw"       # Required for this approach
+```
+
+3. **L1 (Lasso) penalty** - Always added directly to loss:
+```r
+l1_lambda = 100           # L1 regularization strength
+```
+
+**For linear models** (`hidden_sizes = c()`):
+- Use explicit L2 regularization for ridge regression
+- Set `use_explicit_l2 = TRUE` and `l2_lambda > 0`
+- L-BFGS optimizer always uses explicit L2 regardless of `use_explicit_l2`
+
+**For neural networks**:
+- Both explicit L2 and optimizer weight decay are available
+- Explicit L2 applies to all parameters including biases
+- Optimizer weight decay (AdamW) applies differently in optimization
 
 ### Adding Covariates
 

@@ -334,7 +334,8 @@ plot_loss_curves = function(history_df, fold_id) {
     theme(
       legend.position = "bottom",
       plot.title = element_text(face = "bold")
-    )
+    )+
+    scale_y_continuous(limits = c(-100000,100000))
 }
 
 ################################################################################
@@ -357,7 +358,9 @@ plot_loss_curves = function(history_df, fold_id) {
 # @param val_frac Validation fraction within training folds
 # @param net_builder_fn Network architecture builder
 # @param loss_type "mse" or "poisson"
-# @param weight_decay_lambda L2 regularization strength
+# @param l2_lambda L2 (ridge) regularization strength
+# @param l1_lambda L1 (lasso) regularization strength
+# @param use_explicit_l2 Whether to use explicit L2 penalty (vs optimizer weight decay)
 # @param propensity_weight Weight on propensity loss
 # @param optimizer "adamw" or "lbfgs"
 # @param optimizer_args Additional optimizer arguments
@@ -381,7 +384,9 @@ plot_loss_curves = function(history_df, fold_id) {
 crossfit_train_joint = function(Y_tensor, D_tensor, X_tensor, folds, group_vec,
                                  val_frac = 0.10, net_builder_fn,
                                  loss_type = c("mse", "poisson"),
-                                 weight_decay_lambda = 0.0, propensity_weight = 1.0,
+                                 l2_lambda = 0.0, l1_lambda = 0.0,
+                                 use_explicit_l2 = TRUE,
+                                 propensity_weight = 1.0,
                                  optimizer = c("adamw", "lbfgs"), optimizer_args = list(),
                                  max_epochs = 200L, batch_size = NULL,
                                  use_early_stopping = TRUE, keep_best_model = TRUE,
@@ -402,11 +407,15 @@ crossfit_train_joint = function(Y_tensor, D_tensor, X_tensor, folds, group_vec,
   if (length(group_vec) != n) stop("group_vec must have length nrow(X_tensor).")
 
   # Loss function setup
-  use_optimizer_weight_decay = (optimizer == "adamw")
+  # For AdamW: use optimizer weight decay if use_explicit_l2=FALSE, otherwise explicit L2
+  # For L-BFGS: always use explicit L2
+  use_optimizer_weight_decay = (optimizer == "adamw" && !use_explicit_l2 && l2_lambda > 0)
+
   total_loss_fn = make_joint_loss_fn(
     loss_type = loss_type,
-    weight_decay_lambda = weight_decay_lambda,
-    add_explicit_penalty = !use_optimizer_weight_decay,
+    l2_lambda = l2_lambda,
+    l1_lambda = l1_lambda,
+    use_explicit_l2 = use_explicit_l2 || optimizer == "lbfgs",
     propensity_weight = propensity_weight
   )
 
@@ -452,7 +461,7 @@ crossfit_train_joint = function(Y_tensor, D_tensor, X_tensor, folds, group_vec,
       list(
         optimizer = optimizer,
         lr = optimizer_args$lr %||% 1e-3,
-        weight_decay = if (use_optimizer_weight_decay) weight_decay_lambda else 0.0
+        weight_decay = if (use_optimizer_weight_decay) l2_lambda else 0.0
       ),
       optimizer_args[names(optimizer_args) != "lr"]
     )
@@ -511,7 +520,9 @@ crossfit_train_joint = function(Y_tensor, D_tensor, X_tensor, folds, group_vec,
     splits = splits,
     cfg = list(
       loss_type = loss_type,
-      weight_decay_lambda = weight_decay_lambda,
+      l2_lambda = l2_lambda,
+      l1_lambda = l1_lambda,
+      use_explicit_l2 = use_explicit_l2,
       propensity_weight = propensity_weight,
       optimizer = optimizer,
       optimizer_args = optimizer_args,
@@ -678,7 +689,9 @@ run_joint_structural = function(df, hyperparams, group_vec,
     val_frac = hyperparams$val_frac,
     net_builder_fn = net_builder_fn,
     loss_type = loss_type,
-    weight_decay_lambda = hyperparams$weight_decay_lambda,
+    l2_lambda = hyperparams$l2_lambda,
+    l1_lambda = hyperparams$l1_lambda,
+    use_explicit_l2 = hyperparams$use_explicit_l2,
     propensity_weight = propensity_weight,
     optimizer = hyperparams$optimizer,
     optimizer_args = hyperparams$optimizer_args,
