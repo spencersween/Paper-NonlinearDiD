@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Data files (uncomment if you don't want to track data)
+# data/
+
+# Output files
+*.pdf
+*.png
+*.jpg
+plots/
+output/
+
+# Temporary files
+*.swp
+*.swo
+*~
