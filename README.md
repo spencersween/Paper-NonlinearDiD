@@ -105,17 +105,13 @@ If you use this code in your research, please cite:
 
 ```
 @software{nonlinear_did_2026,
-  title = {Nonlinear Difference-in-Differences with Neural Networks},
-  author = {[Your Name]},
+  title = {Semi-parametric Non-linear Difference-in-Differences for Policy Evaluation: New Evidence on the Entrepreneurial Impacts of State Business Tax Credits},
+  author = {Spencer Sween},
   year = {2026},
   url = {https://github.com/spencersween/Paper-NonlinearDiD}
 }
 ```
 
-## License
-
-[Add your license here]
-
 ## Contact
 
-For questions or issues, please open an issue on GitHub or contact [your email].
+For questions or issues, please open an issue on GitHub or contact spencersween@ucsb.edu.
